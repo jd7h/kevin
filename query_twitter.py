@@ -13,9 +13,10 @@ def open_config(filename):
             config[key] = value
     return config
 
-# todo: handle StopIteration properly
 def limithandled(cursor):
-    while True:
+    found_everything = False
+    strange_error = False
+    while not found_everything and not strange_error:
         try:
             yield cursor.next()
         except tweepy.RateLimitError:
@@ -24,8 +25,11 @@ def limithandled(cursor):
         except tweepy.TweepError as e:
             print("[",datetime.datetime.now(),"]","TweepError",type(e),repr(e),"sleeping for 15 minutes...")
             time.sleep(15*60)
+        except StopIteration:
+            found_everything = True
         except Exception as e:
             print("[",datetime.datetime.now(),"]","Unknown error:", type(e), repr(e))
+            strange_error = True
 
 def query_twitter(api):
     search_string = "media.ccc.de/v/33c3"
