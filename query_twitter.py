@@ -1,7 +1,7 @@
 import tweepy
 import time
 import datetime
-import read_write_json_data
+import read_write_json_data as rw
 
 def open_config(filename):
     with open(filename,"r") as infile:
@@ -47,9 +47,9 @@ def query_twitter(api):
             print("Processed tweet",status_json["id"])
         if processed_tweets > 0 and processed_tweets % interval == 0:
             print(processed_tweets,"processed so far.")
-            write_data(results,temp_results_filename)
+            rw.write_data(results,temp_results_filename)
 
-    write_data(results,temp_results_filename)
+    rw.write_data(results,temp_results_filename)
     print(len(results),"written to",temp_results_filename)
     return results
 
@@ -101,7 +101,7 @@ def main():
                 print(datapoint[key],"")
             print()
 
-    write_data(results,"results.data")
+    rw.write_data(results,"results.data")
 
     highest_id = 0
     for r in results:
