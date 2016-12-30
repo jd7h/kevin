@@ -31,6 +31,20 @@ def limithandled(cursor):
             print("[",datetime.datetime.now(),"]","Unknown error:", type(e), repr(e))
             strange_error = True
 
+def status_to_datapoint(search_string,status,results):
+    status_json = status._json
+    datapoint = {}
+    datapoint["tweet_id"], datapoint["tweet_time"], datapoint["nr_of_retweets"] = status_json["id"], status_json["created_at"], status_json["retweet_count"]
+    media_urls = [url["expanded_url"] for url in status_json["entities"]["urls"] if search_string in url["expanded_url"]]
+    if len(media_urls) == 1:
+        datapoint["media_urls"] = media_urls[0]
+        results.append(datapoint)
+    if len(media_urls) > 1:
+        for url in media_urls:
+            datapoint["media_urls"] = url
+            results.append(datapoint)
+    return results
+
 def query_twitter(api,search_string="media.ccc.de/v/32c3",newer_than_id=0):
     temp_results_filename = "last_query_results.data"
     results = []
@@ -42,21 +56,11 @@ def query_twitter(api,search_string="media.ccc.de/v/32c3",newer_than_id=0):
     else:
         cursor = tweepy.Cursor(api.search, q=search_string).items()
     for status in limithandled(cursor):
-        status_json = status._json
-        datapoint = {}
-        datapoint["tweet_id"], datapoint["tweet_time"], datapoint["nr_of_retweets"] = status_json["id"], status_json["created_at"], status_json["retweet_count"]
-        media_urls = [url["expanded_url"] for url in status_json["entities"]["urls"] if search_string in url["expanded_url"]]
-        if len(media_urls) == 1:
-            datapoint["media_urls"] = media_urls[0]
-            results.append(datapoint)
-        if len(media_urls) > 1:
-            for url in media_urls:
-                datapoint["media_urls"] = url
-                results.append(datapoint)
+        results = status_to_datapoint(search_string,status,results)
 
         processed_tweets+=1
         if processed_tweets < interval:
-            print("Processed tweet",status_json["id"])
+            print("Processed tweet.")
         if processed_tweets > 0 and processed_tweets % interval == 0:
             print(processed_tweets,"processed so far.")
             if newer_than_id == 0:
