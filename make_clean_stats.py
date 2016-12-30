@@ -1,4 +1,5 @@
 import read_write_json_data as rw 
+import datetime
 
 def clean_url(dirty_url, search_string):
    url = [part for part in dirty_url.split("#") if search_string in part][0]
@@ -18,18 +19,36 @@ def stats(results, count_retweets=True):
         stats[url] += 1
     return stats
 
+def parsetime(tweet):
+    return datetime.datetime.strptime(tweet["tweet_time"], '%a %b %d %X %z %Y')
+
+def timeframe(results):
+    oldest = parsetime(results[0])
+    newest = parsetime(results[0])
+
+    for tweet in results:
+        tweet_time = parsetime(tweet)
+        if tweet_time < oldest:
+            oldest = tweet_time
+        if tweet_time > newest:
+            newest = tweet_time
+    return oldest, newest
+
 def main():
     results = rw.read_data("last_query_results.data")
-    print(len(results))
-    #clean_results = clean_data(results)
-    print("Without retweets")
+    print("Analysis based on", len(results),"tweets")
+    oldest,newest = timeframe(results)
+    print("Timeframe:",oldest,"-",newest)
+    
+    print("Counting tweets")
     results_without = stats(results, False)
     for result in list(sorted(results_without.items(), key=lambda x: x[1]))[-1:-11:-1]:
         print(result)
-    print("With retweets")
+    print("Counting tweets and retweets")
     results_with = stats(results, True)
     for result in list(sorted(results_with.items(), key=lambda x: x[1]))[-1:-11:-1]:
         print(result)
+
 
     return results_without,results_with
 
