@@ -31,14 +31,17 @@ def limithandled(cursor):
             print("[",datetime.datetime.now(),"]","Unknown error:", type(e), repr(e))
             strange_error = True
 
-def query_twitter(api):
-    search_string = "media.ccc.de/v/33c3"
+def query_twitter(api,search_string="media.ccc.de/v/32c3",newer_than_id=0):
     temp_results_filename = "last_query_results.data"
     results = []
     processed_tweets = 0
     interval = 60
     
-    for status in limithandled(tweepy.Cursor(api.search, q=search_string).items()):
+    if newer_than_id != 0:
+        cursor = tweepy.Cursor(api.search, q=search_string, since_id=newer_than_id).items()
+    else:
+        cursor = tweepy.Cursor(api.search, q=search_string).items()
+    for status in limithandled(cursor):
         status_json = status._json
         datapoint = {}
         datapoint["tweet_id"], datapoint["tweet_time"], datapoint["nr_of_retweets"] = status_json["id"], status_json["created_at"], status_json["retweet_count"]
@@ -56,13 +59,14 @@ def query_twitter(api):
             print("Processed tweet",status_json["id"])
         if processed_tweets > 0 and processed_tweets % interval == 0:
             print(processed_tweets,"processed so far.")
-            rw.write_data(results,temp_results_filename)
+            if newer_than_id == 0:
+                rw.write_data(results,temp_results_filename)
 
-    rw.write_data(results,temp_results_filename)
-    print(len(results),"written to",temp_results_filename)
+    if newer_than_id != 0:
+        rw.append_data(results,temp_results_filename)
+    else:
+        rw.write_data(results,temp_results_filename)
     return results
-
-
 
 def main():
     config = open_config("twitterauth.conf")
@@ -121,11 +125,7 @@ def main():
 
     return query_result,results
     '''
-
-    #poc 4: use cursor
-
-    query_results = query_twitter(api)
-    return query_results
+    return api
 
 if __name__ == "__main__":
     main()
