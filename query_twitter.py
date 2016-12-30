@@ -42,9 +42,14 @@ def query_twitter(api):
         status_json = status._json
         datapoint = {}
         datapoint["tweet_id"], datapoint["tweet_time"], datapoint["nr_of_retweets"] = status_json["id"], status_json["created_at"], status_json["retweet_count"]
-        datapoint["media_urls"] = [url["expanded_url"] for url in status_json["entities"]["urls"] if search_string in url["expanded_url"]]
-        if len(datapoint["media_urls"]) > 0:
+        media_urls = [url["expanded_url"] for url in status_json["entities"]["urls"] if search_string in url["expanded_url"]]
+        if len(media_urls) == 1:
+            datapoint["media_urls"] = media_urls[0]
             results.append(datapoint)
+        if len(media_urls) > 1:
+            for url in media_urls:
+                datapoint["media_urls"] = url
+                results.append(datapoint)
 
         processed_tweets+=1
         if processed_tweets < interval:
