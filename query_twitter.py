@@ -1,5 +1,7 @@
-import csv
 import tweepy
+import time
+import datetime
+import read_write_json_data
 
 def open_config(filename):
     with open(filename,"r") as infile:
@@ -11,23 +13,47 @@ def open_config(filename):
             config[key] = value
     return config
 
+# todo: handle StopIteration properly
+def limithandled(cursor):
+    while True:
+        try:
+            yield cursor.next()
+        except tweepy.RateLimitError:
+            print("[",datetime.datetime.now(),"]","RateLimitError, sleeping for 15 minutes...")
+            time.sleep(15*60)
+        except tweepy.TweepError as e:
+            print("[",datetime.datetime.now(),"]","TweepError",type(e),repr(e),"sleeping for 15 minutes...")
+            time.sleep(15*60)
+        except Exception as e:
+            print("[",datetime.datetime.now(),"]","Unknown error:", type(e), repr(e))
+
 def query_twitter(api):
     search_string = "media.ccc.de/v/33c3"
-    results = api.search(search_string)
-    return results
-
-def read_data(filename):
+    temp_results_filename = "last_query_results.data"
     results = []
-    with open(filename,"r",newline='') as infile:
-        reader = csv.DictReader(infile,["tweet_id","tweet_time","nr_of_retweets","media_urls"])
-        for row in reader:
-            results.append(row)
+    processed_tweets = 0
+    interval = 60
+    
+    for status in limithandled(tweepy.Cursor(api.search, q=search_string).items()):
+        status_json = status._json
+        datapoint = {}
+        datapoint["tweet_id"], datapoint["tweet_time"], datapoint["nr_of_retweets"] = status_json["id"], status_json["created_at"], status_json["retweet_count"]
+        datapoint["media_urls"] = [url["expanded_url"] for url in status_json["entities"]["urls"] if search_string in url["expanded_url"]]
+        if len(datapoint["media_urls"]) > 0:
+            results.append(datapoint)
+
+        processed_tweets+=1
+        if processed_tweets < interval:
+            print("Processed tweet",status_json["id"])
+        if processed_tweets > 0 and processed_tweets % interval == 0:
+            print(processed_tweets,"processed so far.")
+            write_data(results,temp_results_filename)
+
+    write_data(results,temp_results_filename)
+    print(len(results),"written to",temp_results_filename)
     return results
 
-def write_data(results,filename):
-    with open(filename,"w",newline='') as outfile:
-        writer = csv.DictWriter(outfile,["tweet_id","tweet_time","nr_of_retweets","media_urls"])
-        writer.writerows(results)
+
 
 def main():
     config = open_config("twitterauth.conf")
@@ -59,15 +85,16 @@ def main():
             print(follower.screen_name)
     '''
 
+    '''
     # poc 3: extract metadata and media.ccc.de urls from tweets
-    query_result = query_twitter(api)
+    query_results = query_twitter(api)
     #original_tweets = [tweet._json for tweet in query_result if "retweeted_status" not in tweet._json.keys()]
     original_tweets = [tweet._json for tweet in query_result]
     results = []
     for ot in original_tweets:
         datapoint = {}
         datapoint["tweet_id"], datapoint["tweet_time"], datapoint["nr_of_retweets"] = ot["id"], ot["created_at"], ot["retweet_count"]
-        datapoint["media_urls"] = [url["expanded_url"] for url in ot["entities"]["urls"] if "media.ccc" in url["expanded_url"]]
+        datapoint["media_urls"] = [url["expanded_url"] for url in ot["entities"]["urls"] if "media.ccc/v/33c3" in url["expanded_url"]]
         if len(datapoint["media_urls"]) > 0:
             results.append(datapoint)
             for key in ["tweet_id", "tweet_time", "nr_of_retweets", "media_urls"]:
@@ -84,7 +111,12 @@ def main():
     print("Highest tweet id:",highest_id)
 
     return query_result,results
+    '''
 
+    #poc 4: use cursor
+
+    query_results = query_twitter(api)
+    return query_results
 
 if __name__ == "__main__":
     main()
