@@ -23,22 +23,29 @@ def parsetime(tweet):
     return datetime.datetime.strptime(tweet["tweet_time"], '%a %b %d %X %z %Y')
 
 def timeframe(results):
-    oldest = parsetime(results[0])
-    newest = parsetime(results[0])
+    oldest_time = parsetime(results[0])
+    oldest_id = results[0]["tweet_id"]
+    newest_time = parsetime(results[0])
+    newest_id = results[0]["tweet_id"]
 
     for tweet in results:
         tweet_time = parsetime(tweet)
-        if tweet_time < oldest:
-            oldest = tweet_time
-        if tweet_time > newest:
-            newest = tweet_time
-    return oldest, newest
+        if tweet_time < oldest_time:
+            oldest_time = tweet_time
+            oldest_id = tweet["tweet_id"]
+        if tweet_time > newest_time:
+            newest_time = tweet_time
+            newest_id = tweet["tweet_id"]
+    return oldest_time, oldest_id, newest_time, newest_id
 
-def main():
-    results = rw.read_data("last_query_results.data")
+
+
+def main(filename):
+    results = rw.read_data(filename)
     print("Analysis based on", len(results),"tweets")
-    oldest,newest = timeframe(results)
+    oldest,oldest_id,newest,newest_id = timeframe(results)
     print("Timeframe:",oldest,"-",newest)
+    print("IDs:",oldest_id,"-",newest_id)
     
     print("Counting tweets")
     results_without = stats(results, False)
