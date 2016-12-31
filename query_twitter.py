@@ -80,6 +80,14 @@ class StdOutListener(tweepy.StreamListener):
     def on_error(self, data):
         print(data)
 
+def query_streaming_api(api, search_string="33c3"):
+    # source: http://docs.tweepy.org/en/v3.5.0/streaming_how_to.html
+    l = StdOutListener()
+    stream = tweepy.Stream(api.auth, l)
+
+    stream.filter(track=[search_string])
+
+
 def main():
     config = open_config("twitterauth.conf")
     #print(config)
@@ -89,15 +97,8 @@ def main():
     auth.set_access_token(config["access_token_key"], config["access_token_secret"])
 
     api = tweepy.API(auth)
-    
-    # source: http://docs.tweepy.org/en/v3.5.0/streaming_how_to.html
-    l = StdOutListener()
-    stream = tweepy.Stream(api.auth, l)
-
-    search_string = "33c3"
-    stream.filter(track=[search_string])
-    
-    #return api, myStream
+    # query_streaming_api(api)
+    return api
 
 if __name__ == "__main__":
     main()
