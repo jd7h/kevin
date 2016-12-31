@@ -49,7 +49,7 @@ def query_twitter(api,search_string="media.ccc.de/v/32c3",newer_than_id=0):
     temp_results_filename = "last_query_results.data"
     results = []
     processed_tweets = 0
-    interval = 1000
+    interval = 100
     
     if newer_than_id != 0:
         cursor = tweepy.Cursor(api.search, q=search_string, since_id=newer_than_id).items()
@@ -59,8 +59,8 @@ def query_twitter(api,search_string="media.ccc.de/v/32c3",newer_than_id=0):
         results = status_to_datapoint(search_string,status,results)
 
         processed_tweets+=1
-        if processed_tweets < interval:
-            print("Processed tweet.")
+        if len(results) > 0 and processed_tweets < interval:
+            print("Processed tweet",status._json["id"])
         if processed_tweets > 0 and processed_tweets % interval == 0:
             print(processed_tweets,"processed so far.")
             if newer_than_id == 0:
