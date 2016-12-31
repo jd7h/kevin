@@ -2,6 +2,16 @@ import tweepy
 import time
 import datetime
 import read_write_json_data as rw
+import json
+
+def write_dataset(dataset,filename):
+    with open(filename,"w") as outfile:
+        outfile.write(json.dumps(dataset))
+
+def read_dataset(filename):
+    with open(filename,"r") as infile:
+        dataset = json.loads(infile.read())
+        return dataset
 
 def open_config(filename):
     with open(filename,"r") as infile:
@@ -47,6 +57,7 @@ def status_to_datapoint(search_string,status,results):
 
 def query_twitter(api,search_string="media.ccc.de/v/32c3",newer_than_id=0):
     temp_results_filename = "last_query_results.data"
+    dataset = []
     results = []
     processed_tweets = 0
     interval = 100
@@ -56,8 +67,8 @@ def query_twitter(api,search_string="media.ccc.de/v/32c3",newer_than_id=0):
     else:
         cursor = tweepy.Cursor(api.search, q=search_string).items()
     for status in limithandled(cursor):
+        dataset.append(status._json)
         results = status_to_datapoint(search_string,status,results)
-
         processed_tweets+=1
         if len(results) > 0 and processed_tweets < interval:
             print("Processed tweet",status._json["id"])
@@ -65,12 +76,15 @@ def query_twitter(api,search_string="media.ccc.de/v/32c3",newer_than_id=0):
             print(processed_tweets,"processed so far.")
             if newer_than_id == 0:
                 rw.write_data(results,temp_results_filename)
+                write_dataset(dataset,"last_raw_dataset.data")
 
     if newer_than_id != 0:
         rw.append_data(results,temp_results_filename)
+        write_dataset(dataset,"last_raw_dataset.data")
     else:
         rw.write_data(results,temp_results_filename)
-    return results
+        write_dataset(dataset,"last_raw_dataset.data")
+    return dataset, results
 
 class StdOutListener(tweepy.StreamListener):
     def on_status(self, data):
