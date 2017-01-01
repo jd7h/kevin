@@ -1,15 +1,14 @@
 # kevin
-Find the most popular 33C3 (CCC in Hamburg) talks based on tweets. Uses Python, tweepy and the Twitter REST API.
-=======
-
-Collect list of tweeted 33c3 talks and their popularity
+## Find the most popular 33C3 (CCC in Hamburg) talks based on tweets. 
+This project uses Python3, tweepy and the Twitter REST API.
 
 1. find all tweets with "media.ccc.de/v/33c3" in the body
-2. count the occurrence of each links
-3. print top n links/nr of occurrences
+2. count the occurrence of each talk
+3. print top 10 talks with nr of occurrences in tweets
 
 ### Analysis
-'''Analysis based on 6174 tweets
+```
+Analysis based on 6174 tweets
 Timeframe: 2016-12-27 13:42:47+00:00 - 2017-01-01 22:33:00+00:00
 IDs: 813741923143995392 - 815687296078974976
 Counting tweets
@@ -34,12 +33,11 @@ Counting tweets and retweets
 ('https://media.ccc.de/v/33c3-8336-talking_behind_your_back', 210)
 ('https://media.ccc.de/v/33c3-7999-a_data_point_walks_into_a_bar', 200)
 ('https://media.ccc.de/v/33c3-8151-dissecting_modern_3g_4g_cellular_modems', 172)
-'''
+```
 
 ### What I learned from making this project
-* You can only get a small set of tweets from Twitter.
-Twitter is hoarding the tweets. You can either get all tweets from the current moment in time (Twitter Streaming API) or get all tweets from the past 7 days (Twitter REST API)
-* Logging and feedback is not optional when building a proof of concept for a new API.
+* You can only get a small set of tweets from Twitter. Twitter is hoarding the tweets. You can either get all tweets from the current moment in time (Twitter Streaming API) or get all tweets from the past 7 days (Twitter REST API). :(
+* Logging, error-handling and feedback are not optional when building a proof of concept for an API.
 * If you want to build a dataset, save your raw data for debugging and verification purposes.
 * Split functions for scraping, processing data, processing a single datapoint, cleaning data and making an analysis.
 * Even for a Proof of Concept, don't cram everything in the main() function.
