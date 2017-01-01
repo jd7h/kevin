@@ -6,7 +6,7 @@ This project uses Python3, tweepy and the Twitter REST API.
 2. count the occurrence of each talk
 3. print top 10 talks with nr of occurrences in tweets
 
-## Top 10 based on tweets between A and B
+## Top 10 talks of 33C3
 Analysis based on 6174 tweets between 2016-12-27 and 2017-01-01
 
 ### Tweets only
