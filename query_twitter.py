@@ -3,6 +3,7 @@ import time
 import datetime
 import read_write_json_data as rw
 import json
+import re
 
 def write_dataset(dataset,filename):
     with open(filename,"w") as outfile:
@@ -41,18 +42,28 @@ def limithandled(cursor):
             print("[",datetime.datetime.now(),"]","Unknown error:", type(e), repr(e))
             strange_error = True
 
-def status_to_datapoint(search_string,status,results):
+def clean_url(dirty_url):
+    # ugly hardcoded, works for now
+    regexp = "[^ \?\=\#\t\n\r\f\v\\\]*media\.ccc\.de[^ \?\=\#\t\n\r\f\v\\\]*"
+    matches = re.findall(regexp, dirty_url)
+    if len(matches) == 0:
+        return "BADURL: " + dirty_url
+    elif len(matches) == 1:
+        return matches[0]
+    else:
+        return "ERROR: multiple matches: " + str(matches)
+
+def status_to_datapoint(search_string,status):
     datapoint = {}
-    datapoint["tweet_id"], datapoint["tweet_time"], datapoint["nr_of_retweets"] = status["id"], status["created_at"], status["retweet_count"]
-    media_urls = [url["expanded_url"] for url in status["entities"]["urls"] if search_string in url["expanded_url"]]
-    if len(media_urls) == 1:
-        datapoint["media_urls"] = media_urls[0]
-        results.append(datapoint)
-    if len(media_urls) > 1:
-        for url in media_urls:
-            datapoint["media_urls"] = url
-            results.append(datapoint)
-    return results
+    datapoint["tweet_id"] = status["id"]
+    datapoint["tweet_time"] = status["created_at"]
+    datapoint["nr_of_retweets"] = status["retweet_count"]
+    datapoint["status"] = status
+
+    expanded_urls = [clean_url(url["expanded_url"]) for url in status["entities"]["urls"]]
+    expanded_urls = [url for url in expanded_urls if not "BADURL" in url and not "ERROR" in url]
+    datapoint["media_urls"] = expanded_urls
+    return datapoint
 
 def process_dataset(search_string, dataset):
     temp_results_filename = "last_clean_results.data"
@@ -61,19 +72,21 @@ def process_dataset(search_string, dataset):
     interval = 100
     
     for status in dataset:
-        results = status_to_datapoint(search_string,status,results)
+        results.append(status_to_datapoint(search_string,status))
         processed_tweets+=1
         if processed_tweets < interval:
             print("Processed tweet",status["id"])
         if processed_tweets > 0 and processed_tweets % interval == 0:
             print(processed_tweets,"processed so far.")
 
-    rw.write_data(results,temp_results_filename)
+    #rw.write_data(results,temp_results_filename)
     print(processed_tweets,"tweets processed.")
     return results
 
 def query_rest_api(api,search_string="media.ccc.de/v/32c3",newer_than_id=0):
     dataset = []
+    interval = 100
+    scraped_tweets = 0
     
     if newer_than_id != 0:
         cursor = tweepy.Cursor(api.search, q=search_string, since_id=newer_than_id).items()
@@ -82,6 +95,11 @@ def query_rest_api(api,search_string="media.ccc.de/v/32c3",newer_than_id=0):
 
     for status in limithandled(cursor):
         dataset.append(status._json)
+        scraped_tweets +=1
+        if scraped_tweets < interval:
+            print("Scraped tweet",dataset[-1]["id"])
+        if scraped_tweets > 0 and scraped_tweets % interval == 0:
+            print(scraped_tweets,"tweets scraped so far.")
     
     print("Scraped",len(dataset),"tweets.")
     print("Writing raw data to file")
