@@ -42,10 +42,9 @@ def limithandled(cursor):
             strange_error = True
 
 def status_to_datapoint(search_string,status,results):
-    status_json = status._json
     datapoint = {}
-    datapoint["tweet_id"], datapoint["tweet_time"], datapoint["nr_of_retweets"] = status_json["id"], status_json["created_at"], status_json["retweet_count"]
-    media_urls = [url["expanded_url"] for url in status_json["entities"]["urls"] if search_string in url["expanded_url"]]
+    datapoint["tweet_id"], datapoint["tweet_time"], datapoint["nr_of_retweets"] = status["id"], status["created_at"], status["retweet_count"]
+    media_urls = [url["expanded_url"] for url in status["entities"]["urls"] if search_string in url["expanded_url"]]
     if len(media_urls) == 1:
         datapoint["media_urls"] = media_urls[0]
         results.append(datapoint)
@@ -55,36 +54,39 @@ def status_to_datapoint(search_string,status,results):
             results.append(datapoint)
     return results
 
-def query_twitter(api,search_string="media.ccc.de/v/32c3",newer_than_id=0):
-    temp_results_filename = "last_query_results.data"
-    dataset = []
+def process_dataset(search_string, dataset):
+    temp_results_filename = "last_clean_results.data"
     results = []
     processed_tweets = 0
     interval = 100
+    
+    for status in dataset:
+        results = status_to_datapoint(search_string,status,results)
+        processed_tweets+=1
+        if processed_tweets < interval:
+            print("Processed tweet",status["id"])
+        if processed_tweets > 0 and processed_tweets % interval == 0:
+            print(processed_tweets,"processed so far.")
+
+    rw.write_data(results,temp_results_filename)
+    print(processed_tweets,"tweets processed.")
+    return results
+
+def query_rest_api(api,search_string="media.ccc.de/v/32c3",newer_than_id=0):
+    dataset = []
     
     if newer_than_id != 0:
         cursor = tweepy.Cursor(api.search, q=search_string, since_id=newer_than_id).items()
     else:
         cursor = tweepy.Cursor(api.search, q=search_string).items()
+
     for status in limithandled(cursor):
         dataset.append(status._json)
-        results = status_to_datapoint(search_string,status,results)
-        processed_tweets+=1
-        if len(results) > 0 and processed_tweets < interval:
-            print("Processed tweet",status._json["id"])
-        if processed_tweets > 0 and processed_tweets % interval == 0:
-            print(processed_tweets,"processed so far.")
-            if newer_than_id == 0:
-                rw.write_data(results,temp_results_filename)
-                write_dataset(dataset,"last_raw_dataset.data")
-
-    if newer_than_id != 0:
-        rw.append_data(results,temp_results_filename)
-        write_dataset(dataset,"last_raw_dataset.data")
-    else:
-        rw.write_data(results,temp_results_filename)
-        write_dataset(dataset,"last_raw_dataset.data")
-    return dataset, results
+    
+    print("Scraped",len(dataset),"tweets.")
+    print("Writing raw data to file")
+    write_dataset(dataset,"last_raw_dataset.data")
+    return dataset
 
 class StdOutListener(tweepy.StreamListener):
     def on_status(self, data):
@@ -101,8 +103,7 @@ def query_streaming_api(api, search_string="33c3"):
 
     stream.filter(track=[search_string])
 
-
-def main():
+def get_api():
     config = open_config("twitterauth.conf")
     #print(config)
 
@@ -113,6 +114,9 @@ def main():
     api = tweepy.API(auth)
     # query_streaming_api(api)
     return api
+
+def main():
+    pass
 
 if __name__ == "__main__":
     main()
