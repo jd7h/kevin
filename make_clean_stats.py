@@ -11,12 +11,18 @@ def clean_url(dirty_url, search_string):
 def stats(results, count_retweets=True):
     stats = {}
     for tweet in results:
-        url = clean_url(tweet["media_urls"], "media.ccc.de")
-        if url not in stats.keys():
-            stats[url] = 0
-        if count_retweets:
-            stats[url] += tweet["nr_of_retweets"]
-        stats[url] += 1
+        for url in tweet["media_urls"]:
+            if url not in stats.keys():
+                stats[url] = 0
+            if count_retweets:
+                if "retweeted_status" in tweet["status"].keys():
+                    if tweet["status"]["retweeted_status"]["retweet_count"] != tweet["status"]["retweet_count"]:
+                        stats[url] += tweet["nr_of_retweets"]
+                    else:
+                        pass
+                else:
+                    stats[url] += tweet["nr_of_retweets"]
+            stats[url] += 1
     return stats
 
 def parsetime(tweet):
@@ -38,10 +44,7 @@ def timeframe(results):
             newest_id = tweet["tweet_id"]
     return oldest_time, oldest_id, newest_time, newest_id
 
-
-
-def main(filename):
-    results = rw.read_data(filename)
+def print_analysis(results):
     print("Analysis based on", len(results),"tweets")
     oldest,oldest_id,newest,newest_id = timeframe(results)
     print("Timeframe:",oldest,"-",newest)
@@ -56,6 +59,11 @@ def main(filename):
     for result in list(sorted(results_with.items(), key=lambda x: x[1]))[-1:-11:-1]:
         print(result)
 
+
+
+def main(filename):
+    results = rw.read_data(filename)
+    results_without, results_with = print_analysis(results)
 
     return results_without,results_with
 
