@@ -50,16 +50,23 @@ def print_analysis(results):
     print("Timeframe:",oldest,"-",newest)
     print("IDs:",oldest_id,"-",newest_id)
     
-    print("Counting tweets")
+    print("Tweets")
     results_without = stats(results, False)
-    for result in list(sorted(results_without.items(), key=lambda x: x[1]))[-1:-11:-1]:
+    n = 10
+    counter = 1
+    for result in list(sorted(results_without.items(), key=lambda x: x[1]))[-1:((n*-1)-1):-1]:
+        #print(str(counter) + ".","["+result[0]+"]("+result[0]+")", "("+str(result[1])+")")
         print(result)
-    print("Counting tweets and retweets")
+        counter += 1
+    print()
+    print("Tweets and retweets")
+    counter = 1
     results_with = stats(results, True)
     for result in list(sorted(results_with.items(), key=lambda x: x[1]))[-1:-11:-1]:
+        #print(str(counter) + ".","["+result[0]+"]("+result[0]+")", "("+str(result[1])+")")
         print(result)
-
-
+        counter += 1
+    return results_without, results_with
 
 def main(filename):
     results = rw.read_data(filename)
