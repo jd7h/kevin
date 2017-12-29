@@ -1,9 +1,10 @@
 import tweepy
 import time
 import datetime
-import read_write_json_data as rw
 import json
 import re
+import read_write_json_data as rw
+import make_clean_stats
 
 def write_dataset(dataset,filename):
     with open(filename,"w") as outfile:
@@ -102,8 +103,8 @@ def query_rest_api(api,search_string="media.ccc.de/v/32c3",newer_than_id=0):
             print(scraped_tweets,"tweets scraped so far.")
     
     print("Scraped",len(dataset),"tweets.")
-    print("Writing raw data to file")
-    write_dataset(dataset,"last_raw_dataset.data")
+    #print("Writing raw data to file")
+    #write_dataset(dataset,"last_raw_dataset.data")
     return dataset
 
 class StdOutListener(tweepy.StreamListener):
@@ -133,8 +134,20 @@ def get_api():
     # query_streaming_api(api)
     return api
 
-def main():
-    pass
+
+def main(searchterm="media.ccc.de/v/34c3",filename="last_raw_dataset.data",last_processed_id=0,continue_search=False):
+    dataset = []
+    if(continue_search):
+        #open previous results
+        dataset = read_dataset(filename)
+        results = process_dataset(searchterm,dataset)
+        last_processed_id = max([tweet['tweet_id'] for tweet in results])
+    api = get_api()
+    dataset = dataset + query_rest_api(api,searchterm,last_processed_id)
+    write_dataset(dataset,filename)
+    results = process_dataset(searchterm,dataset)
+    res1, res2 = make_clean_stats.print_analysis(results,markdown=True)
+    return dataset, results
 
 if __name__ == "__main__":
     main()
