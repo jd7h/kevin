@@ -44,27 +44,35 @@ def timeframe(results):
             newest_id = tweet["tweet_id"]
     return oldest_time, oldest_id, newest_time, newest_id
 
-def print_analysis(results):
+def print_analysis(results,markdown=False):
     print("Analysis based on", len(results),"tweets")
     oldest,oldest_id,newest,newest_id = timeframe(results)
     print("Timeframe:",oldest,"-",newest)
     print("IDs:",oldest_id,"-",newest_id)
     
+    if(markdown):
+        print("### ",end="")
     print("Tweets")
     results_without = stats(results, False)
     n = 10
     counter = 1
     for result in list(sorted(results_without.items(), key=lambda x: x[1]))[-1:((n*-1)-1):-1]:
-        #print(str(counter) + ".","["+result[0]+"]("+result[0]+")", "("+str(result[1])+")")
-        print(result)
+        if(markdown):
+            print(str(counter) + ".","["+result[0]+"]("+result[0]+")", "("+str(result[1])+")")
+        else:
+            print(result)
         counter += 1
     print()
+    if(markdown):
+        print("### ",end="")
     print("Tweets and retweets")
     counter = 1
     results_with = stats(results, True)
     for result in list(sorted(results_with.items(), key=lambda x: x[1]))[-1:-11:-1]:
-        #print(str(counter) + ".","["+result[0]+"]("+result[0]+")", "("+str(result[1])+")")
-        print(result)
+        if(markdown):
+            print(str(counter) + ".","["+result[0]+"]("+result[0]+")", "("+str(result[1])+")")
+        else:
+            print(result)
         counter += 1
     return results_without, results_with
 
